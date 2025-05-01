@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 
-
 const config = {
   type: Phaser.AUTO,
   width: window.innerWidth,
@@ -13,38 +12,39 @@ const config = {
   }
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);
 
-let bg;
-let startButton;
+let bg, startButton;
 const tileCount = 5;
 let tileSprites = [];
 let dropZones = [];
 let congratsText;
+let puzzleSolved = false;
 
 function preload() {
   this.load.image('img', 'img.jpg');
   this.load.image('start', 'icons8-start-64.png');
 }
 
-
 function create() {
-  bg = this.add.image(0, 0, 'img').setOrigin(0, 0);
+  bg = this.add.image(0, 0, 'img').setOrigin(0);
   bg.displayWidth = this.scale.width;
   bg.displayHeight = this.scale.height;
 
-  startButton = this.add.image(this.scale.width / 2, this.scale.height / 2, 'start').setOrigin(0.5);
-  startButton.setInteractive();
+  startButton = this.add.image(this.scale.width / 2, this.scale.height / 2, 'start')
+    .setOrigin(0.5)
+    .setInteractive();
+
   startButton.on('pointerdown', () => sliceImage.call(this, 'img'));
 }
 
 function sliceImage(imageKey) {
   bg.destroy();
   startButton.destroy();
-  const fullImage = this.textures.get(imageKey).getSourceImage();
 
+  const fullImage = this.textures.get(imageKey).getSourceImage();
   const tileWidth = config.width / tileCount;
-  const tileHeight = config.height;
+  const tileHeight = config.height * 0.9; // 90% height
 
   const tileData = [];
 
@@ -67,15 +67,18 @@ function sliceImage(imageKey) {
   Phaser.Utils.Array.Shuffle(tileData);
 
   for (let i = 0; i < tileData.length; i++) {
-    // Create drop zone with visible outline
-    const zone = this.add.rectangle(i * tileWidth, 0, tileWidth, tileHeight)
-      .setOrigin(0, 0)
-      .setStrokeStyle(4, 0xff0000)
+    const x = i * tileWidth;
+    
+    // Drop zone
+    const zone = this.add.rectangle(x, 0, tileWidth, tileHeight)
+      .setOrigin(0)
+      .setStrokeStyle(2, 0xff0000)
       .setInteractive({ dropZone: true });
     dropZones.push(zone);
 
-    const sprite = this.add.image(i * tileWidth, 0, tileData[i].key)
-      .setOrigin(0, 0)
+    // Tile sprite
+    const sprite = this.add.image(x, 0, tileData[i].key)
+      .setOrigin(0)
       .setInteractive({ draggable: true });
 
     sprite.originalIndex = tileData[i].index;
@@ -84,53 +87,56 @@ function sliceImage(imageKey) {
     this.input.setDraggable(sprite);
   }
 
-  this.input.on('dragstart', (pointer, gameObject) => {
+  this.input.on('dragstart', (_, gameObject) => {
+    if (puzzleSolved) return;
     gameObject.setDepth(1);
   });
 
-  this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+  this.input.on('drag', (_, gameObject, dragX, dragY) => {
+    if (puzzleSolved) return;
     gameObject.x = dragX;
-    // gameObject.y = dragY;
+    gameObject.y = dragY;
   });
 
-  this.input.on('dragenter', (pointer, gameObject, dropZone) => {
-    dropZone.setStrokeStyle(4, 0x00ff00); // Highlight on enter
+  this.input.on('dragenter', (_, __, dropZone) => {
+    dropZone.setStrokeStyle(2, 0x00ff00);
   });
 
-  this.input.on('dragleave', (pointer, gameObject, dropZone) => {
-    dropZone.setStrokeStyle(4, 0xff0000); // Reset highlight
+  this.input.on('dragleave', (_, __, dropZone) => {
+    dropZone.setStrokeStyle(2, 0xff0000);
   });
 
-  this.input.on('drop', (pointer, draggedTile, dropZone) => {
+  this.input.on('drop', (_, dragged, dropZone) => {
+    if (puzzleSolved) return;
+
     const dropIndex = dropZones.indexOf(dropZone);
     const targetTile = tileSprites.find(t => t.currentIndex === dropIndex);
 
-    if (targetTile && draggedTile !== targetTile) {
-      swapTiles(draggedTile, targetTile);
-    } else {
-      // Return tile to original position
-      this.tweens.add({
-        targets: draggedTile,
-        x: draggedTile.currentIndex * tileWidth,
-        y: 0,
-        duration: 300,
-        ease: 'Power2'
-      });
+    if (!targetTile || dragged === targetTile) {
+      // Revert to original
+      resetTile(dragged);
+      return;
     }
 
-    dropZone.setStrokeStyle(4, 0xff0000); // Reset highlight
+    swapTiles(dragged, targetTile);
+    dropZone.setStrokeStyle(2, 0xff0000);
   });
 
-  this.input.on('dragend', (pointer, gameObject, dropped) => {
+  this.input.on('dragend', (_, gameObject, dropped) => {
     if (!dropped) {
-      this.tweens.add({
-        targets: gameObject,
-        x: gameObject.currentIndex * tileWidth,
-        y: 0,
-        duration: 300,
-        ease: 'Power2'
-      });
+      resetTile(gameObject);
     }
+  });
+}
+
+function resetTile(tile) {
+  const tileWidth = config.width / tileCount;
+  tile.scene.tweens.add({
+    targets: tile,
+    x: tile.currentIndex * tileWidth,
+    y: 0,
+    duration: 300,
+    ease: 'Power2'
   });
 }
 
@@ -140,8 +146,12 @@ function swapTiles(tileA, tileB) {
   const indexA = tileA.currentIndex;
   const indexB = tileB.currentIndex;
 
+  // Swap index values
   tileA.currentIndex = indexB;
   tileB.currentIndex = indexA;
+
+  // Swap in array (for tracking)
+  [tileSprites[indexA], tileSprites[indexB]] = [tileSprites[indexB], tileSprites[indexA]];
 
   tileA.scene.tweens.add({
     targets: tileA,
@@ -163,29 +173,44 @@ function swapTiles(tileA, tileB) {
       checkIfSolved(tileB.scene);
     }
   });
-
-  [tileSprites[indexA], tileSprites[indexB]] = [tileSprites[indexB], tileSprites[indexA]];
 }
 
 function checkIfSolved(scene) {
-  const allCorrect = tileSprites.every(tile => tile.originalIndex === tile.currentIndex);
-  if (allCorrect && !congratsText) {
-    congratsText = scene.add.text(
+  const isCorrect = tileSprites.every(t => t.originalIndex === t.currentIndex);
+  if (isCorrect && !puzzleSolved) {
+    puzzleSolved = true;
+
+    // Disable interaction
+    tileSprites.forEach(tile => tile.disableInteractive());
+
+    // Show text
+    scene.add.text(
       config.width / 2,
-      100,
+      60,
       '🎉 Congratulations! 🎉',
       {
         fontSize: '48px',
         fill: '#ffffff',
         backgroundColor: '#28a745',
-        padding: { x: 20, y: 10 },
-        fontStyle: 'bold'
+        padding: { x: 20, y: 10 }
       }
     ).setOrigin(0.5).setDepth(10);
+
+    // Show Lottie animation
+    showLottieAnimation();
   }
 }
 
-
-function update() {
-  // Not used currently
+function showLottieAnimation() {
+  const container = document.getElementById('lottie-container');
+  container.style.display = 'block';
+  lottie.loadAnimation({
+    container: container,
+    renderer: 'svg',
+    loop: true,
+    autoplay: true,
+    path: 'congrats.json' // Place this file in the same directory
+  });
 }
+
+function update() {}
