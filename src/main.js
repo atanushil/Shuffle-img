@@ -78,6 +78,21 @@ function sliceImage(imageKey) {
     // Enable drag events
     this.input.setDraggable(sprite);
 
+    this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+      gameObject.x = dragX;
+      // gameObject.y = dragY;
+    });
+
+    
+    // 📌 Optional (for visual feedback):
+    
+    this.input.on('dragstart', (pointer, gameObject) => {
+      gameObject.setAlpha(0.7);
+    });
+    
+    this.input.on('dragend', (pointer, gameObject) => {
+      gameObject.setAlpha(1);
+    });
     
 
     
