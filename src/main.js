@@ -22,7 +22,7 @@ let selectedTile = null; // To keep track of the tile being dragged
 
 function preload() {
   this.load.image('img', 'img.jpg');  
-  this.load.image('start', 'start.webp');  
+  this.load.image('start', 'icons8-start-64.png');  
 }
 
 function create() {
@@ -31,12 +31,14 @@ function create() {
   bg.displayHeight = this.scale.height;
 
   startButton = this.add.image(this.scale.width / 2, this.scale.height / 2, 'start').setOrigin(0.5, 0.5);
-  startButton.setScale(0.2);
+  startButton.setScale(1);
   startButton.setInteractive();
   startButton.on('pointerdown', () => sliceImage.call(this, 'img'));
 }
 
 function sliceImage(imageKey) {
+  bg.destroy();
+  startButton.destroy();
   const fullImage = this.textures.get(imageKey).getSourceImage();
 
   const tileWidth = config.width / tileCount;
@@ -71,8 +73,14 @@ function sliceImage(imageKey) {
     sprite.currentIndex = i;
     tileSprites.push(sprite);
 
+
+
     // Enable drag events
     this.input.setDraggable(sprite);
+
+    
+
+    
   }
 
   
