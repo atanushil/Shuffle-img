@@ -44,7 +44,7 @@ function sliceImage(imageKey) {
 
   const fullImage = this.textures.get(imageKey).getSourceImage();
   const tileWidth = config.width / tileCount;
-  const tileHeight = config.height * 0.9; // 90% height
+  const tileHeight = config.height;
 
   const tileData = [];
 
@@ -66,17 +66,13 @@ function sliceImage(imageKey) {
 
   Phaser.Utils.Array.Shuffle(tileData);
 
+  // Create drop zones
+  createDropZones.call(this, tileWidth, tileHeight);
+
+  // Create tile sprites
   for (let i = 0; i < tileData.length; i++) {
     const x = i * tileWidth;
-    
-    // Drop zone
-    const zone = this.add.rectangle(x, 0, tileWidth, tileHeight)
-      .setOrigin(0)
-      .setStrokeStyle(2, 0xff0000)
-      .setInteractive({ dropZone: true });
-    dropZones.push(zone);
 
-    // Tile sprite
     const sprite = this.add.image(x, 0, tileData[i].key)
       .setOrigin(0)
       .setInteractive({ draggable: true });
@@ -113,7 +109,6 @@ function sliceImage(imageKey) {
     const targetTile = tileSprites.find(t => t.currentIndex === dropIndex);
 
     if (!targetTile || dragged === targetTile) {
-      // Revert to original
       resetTile(dragged);
       return;
     }
@@ -127,6 +122,20 @@ function sliceImage(imageKey) {
       resetTile(gameObject);
     }
   });
+}
+
+// 🔧 Function to create drop zones
+function createDropZones(tileWidth, tileHeight) {
+  for (let i = 0; i < tileCount; i++) {
+    const x = i * tileWidth;
+
+    const zone = this.add.rectangle(x + 20, 20, tileWidth - 40, tileHeight - 40)
+      .setOrigin(0)
+      .setStrokeStyle(2, 0xff0000)
+      .setInteractive({ dropZone: true });
+
+    dropZones.push(zone);
+  }
 }
 
 function resetTile(tile) {
@@ -146,11 +155,9 @@ function swapTiles(tileA, tileB) {
   const indexA = tileA.currentIndex;
   const indexB = tileB.currentIndex;
 
-  // Swap index values
   tileA.currentIndex = indexB;
   tileB.currentIndex = indexA;
 
-  // Swap in array (for tracking)
   [tileSprites[indexA], tileSprites[indexB]] = [tileSprites[indexB], tileSprites[indexA]];
 
   tileA.scene.tweens.add({
@@ -180,10 +187,8 @@ function checkIfSolved(scene) {
   if (isCorrect && !puzzleSolved) {
     puzzleSolved = true;
 
-    // Disable interaction
     tileSprites.forEach(tile => tile.disableInteractive());
 
-    // Show text
     scene.add.text(
       config.width / 2,
       60,
@@ -196,7 +201,6 @@ function checkIfSolved(scene) {
       }
     ).setOrigin(0.5).setDepth(10);
 
-    // Show Lottie animation
     showLottieAnimation();
   }
 }
@@ -209,7 +213,7 @@ function showLottieAnimation() {
     renderer: 'svg',
     loop: true,
     autoplay: true,
-    path: 'congrats.json' // Place this file in the same directory
+    path: 'congrats.json'
   });
 }
 
