@@ -189,17 +189,17 @@ function checkIfSolved(scene) {
 
     tileSprites.forEach(tile => tile.disableInteractive());
 
-    scene.add.text(
-      config.width / 2,
-      60,
-      '🎉 Congratulations! 🎉',
-      {
-        fontSize: '48px',
-        fill: '#ffffff',
-        backgroundColor: '#28a745',
-        padding: { x: 20, y: 10 }
-      }
-    ).setOrigin(0.5).setDepth(10);
+    // scene.add.text(
+    //   config.width / 2,
+    //   60,
+    //   '🎉 Congratulations! 🎉',
+    //   {
+    //     fontSize: '48px',
+    //     fill: '#ffffff',
+    //     backgroundColor: '#28a745',
+    //     padding: { x: 20, y: 10 }
+    //   }
+    // ).setOrigin(0.5).setDepth(10);
 
     showLottieAnimation();
   }
