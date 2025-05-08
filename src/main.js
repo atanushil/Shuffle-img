@@ -79,6 +79,7 @@ function sliceImage(imageKey) {
 
     sprite.originalIndex = tileData[i].index;
     sprite.currentIndex = i;
+    sprite.preFX.addColorMatrix().blackWhite()
     tileSprites.push(sprite);
     this.input.setDraggable(sprite);
   }
@@ -124,7 +125,7 @@ function sliceImage(imageKey) {
   });
 }
 
-// 🔧 Function to create drop zones
+//  Function to create drop zones
 function createDropZones(tileWidth, tileHeight) {
   for (let i = 0; i < tileCount; i++) {
     const x = i * tileWidth;
@@ -181,30 +182,24 @@ function swapTiles(tileA, tileB) {
     }
   });
 }
-
 function checkIfSolved(scene) {
   const isCorrect = tileSprites.every(t => t.originalIndex === t.currentIndex);
   if (isCorrect && !puzzleSolved) {
     puzzleSolved = true;
 
-    tileSprites.forEach(tile => tile.disableInteractive());
+    tileSprites.forEach(tile => tile.clearFX());
 
-    // scene.add.text(
-    //   config.width / 2,
-    //   60,
-    //   '🎉 Congratulations! 🎉',
-    //   {
-    //     fontSize: '48px',
-    //     fill: '#ffffff',
-    //     backgroundColor: '#28a745',
-    //     padding: { x: 20, y: 10 }
-    //   }
-    // ).setOrigin(0.5).setDepth(10);
-
-    showLottieAnimation();
+    showLottieAnimation(); // show animation
+    // hide it after 3 seconds
+    setTimeout(() => {
+      hideLottieAnimation();
+      showBackButton(scene)
+    }, 5000);
+    // this.askQuestion()
   }
 }
 
+//show the animation
 function showLottieAnimation() {
   const container = document.getElementById('lottie-container');
   container.style.display = 'block';
@@ -216,5 +211,57 @@ function showLottieAnimation() {
     path: 'congrats.json'
   });
 }
+//hide the animation 
+function hideLottieAnimation() {
+  const container = document.getElementById('lottie-container');
+  container.style.display = 'none';
+}
+
+
+function showBackButton(scene) {
+  const backText = scene.add.text(scene.scale.width / 2, scene.scale.height / 2, "← Back to Start", {
+    fontSize: '40px',
+    fontFamily: 'Arial',
+    color: '#ffffff',
+    backgroundColor: '#000000aa',
+    padding: { x: 20, y: 10 },
+    align: 'center',
+    fontStyle: 'bold',
+    stroke: '#ffcc00',
+    strokeThickness: 4
+  })
+    .setOrigin(0.5)
+    .setInteractive({ useHandCursor: true });
+
+  // Pulse animation (scale up and down)
+  scene.tweens.add({
+    targets: backText,
+    scale: { from: 1, to: 1.1 },
+    duration: 800,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut'
+  });
+
+  // Hover effect (tint or scale)
+  backText.on('pointerover', () => {
+    backText.setStyle({ color: '#ffff00' });
+  });
+
+  backText.on('pointerout', () => {
+    backText.setStyle({ color: '#ffffff' });
+  });
+
+  // Restart the scene when clicked
+  backText.on("pointerdown", () => {
+    tileSprites = [];
+    dropZones = [];
+    puzzleSolved = false;
+    scene.scene.restart();
+  });
+}
+
+
+
 
 function update() {}
