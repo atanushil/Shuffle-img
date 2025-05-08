@@ -189,15 +189,18 @@ function checkIfSolved(scene) {
 
     tileSprites.forEach(tile => tile.clearFX());
 
-    showLottieAnimation(); // show animation
-    // hide it after 3 seconds
+    showLottieAnimation(); // Show animation
+    // Hide it after 5 seconds
     setTimeout(() => {
       hideLottieAnimation();
-      showBackButton(scene)
+      // showBackButton(scene);
+
+      // Call the askQuestion function here to prompt the user after the puzzle is solved
+      askQuestion(scene);
     }, 5000);
-    // this.askQuestion()
   }
 }
+
 
 //show the animation
 function showLottieAnimation() {
@@ -215,6 +218,89 @@ function showLottieAnimation() {
 function hideLottieAnimation() {
   const container = document.getElementById('lottie-container');
   container.style.display = 'none';
+}
+function askQuestion(scene) {
+  const question = "Where is Obito in the image?";
+  const correctTiles = [2]; // Adjust as needed
+
+  // Display question
+  const questionText = scene.add.text(scene.scale.width / 2, 25, question, {
+    font: "32px Arial",
+    fill: "#ffffff",
+    backgroundColor: "#000000",
+    padding: { x: 10, y: 10 },
+    align: "center"
+  }).setOrigin(0.5, 0);
+
+  const selectedTiles = [];
+
+  // Make tiles interactive for selection
+  tileSprites.forEach((tile) => {
+    tile.setInteractive();
+    tile.on("pointerdown", () => {
+      tile.selected = !tile.selected;
+
+      if (tile.selected) {
+        tile.setTint(0xffff00);
+        selectedTiles.push(tile);
+      } else {
+        tile.clearTint();
+        const index = selectedTiles.indexOf(tile);
+        if (index !== -1) selectedTiles.splice(index, 1);
+      }
+    });
+  });
+
+  // Submit button
+  const submitButton = scene.add.text(scene.scale.width / 2, scene.scale.height - 50, "Submit", {
+    font: "32px Arial",
+    fill: "#ffffff",
+    backgroundColor: "#ff0000",
+    padding: { x: 20, y: 10 },
+    align: "center"
+  }).setOrigin(0.5, 1).setInteractive();
+
+  submitButton.on("pointerdown", () => {
+    if (selectedTiles.length === 0) {
+      alert("Please select at least one tile!");
+      return;
+    }
+
+    const selectedIndices = selectedTiles.map(tile => tile.currentIndex);
+    const isCorrect = selectedIndices.length === correctTiles.length &&
+      selectedIndices.every(index => correctTiles.includes(index));
+
+    if (isCorrect) {
+      alert("Correct! You Win!");
+      questionText.destroy();
+      selectedTiles.forEach(tile => tile.clearTint());
+      submitButton.destroy();
+      setTimeout(() => showBackButton(scene), 500);
+    } else {
+      alert("Wrong! Please Try Again!");
+    }
+  });
+}
+
+
+// Optionally, you can also use this to manage submission of answers in a more reusable way
+function submitAnswer(scene, selectedTiles, correctTiles) {
+  if (selectedTiles.length === 0) {
+    alert("Please select at least one tile!");
+    return;
+  }
+
+  // Compare selected tiles with the correct ones
+  const isCorrect =
+    selectedTiles.length === correctTiles.length &&
+    selectedTiles.every(tile => correctTiles.includes(tile));
+
+  if (isCorrect) {
+    alert("Correct! You Win!");
+    setTimeout(() => showBackButton(scene), 500); // Show back button after correct answer
+  } else {
+    alert("Wrong! Please Try Again!");
+  }
 }
 
 
